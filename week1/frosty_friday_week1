@@ -1,0 +1,77 @@
+-- Create a new database named 'frostyfriday'
+CREATE DATABASE frostyfriday;
+
+
+-- Create a stage to reference the S3 bucket location for the data files
+CREATE STAGE frosty_friday_1 URL = 's3://frostyfridaychallenges/challenge_1/';
+
+
+-- Show all stages available in the current database
+SHOW STAGES;
+
+
+-- List the contents of the stage 'frosty_friday_1'
+LIST @frosty_friday_1;
+
+
+-- Select and preview the first column of data from the CSV files in the stage
+SELECT
+    t.$1
+FROM
+    @frosty_friday_1 (pattern => '.*[.]csv') t;
+
+    
+-- Create or replace a file format named 'csvformat' for CSV files
+    CREATE
+    OR REPLACE FILE FORMAT csvformat TYPE = 'CSV' SKIP_HEADER = 1;
+
+    
+-- Select the first column, the file name, and the current timestamp from the stage files
+SELECT
+    $1 AS data,
+    metadata$filename AS file_name,
+    CURRENT_TIMESTAMP() AS load_timestamp
+FROM
+    @frosty_friday_1 (file_format => 'csvformat');
+    
+    
+-- Create or replace a table named 'frosty_friday_week1' with specified columns
+CREATE OR REPLACE TABLE frosty_friday_week1 (
+        CUSTOM_TEXT TEXT,
+        -- The main content text from the CSV
+        metadata_file_name TEXT,
+        -- The name of the file from which the row was loaded
+        LOAD_TMSP TIMESTAMP_TZ -- Timestamp with timezone information
+    );
+
+    
+-- Set the session's time zone to UTC for consistent timestamp storage
+ALTER SESSION
+SET TIMEZONE = 'UTC';
+
+
+-- Copy data into the 'frosty_friday_week1' table from the stage using the defined file format
+COPY INTO frosty_friday_week1
+FROM
+    (
+        SELECT
+            $1 AS CUSTOM_TEXT,
+            metadata$filename AS metadata_file_name,
+            CURRENT_TIMESTAMP() AS LOAD_TMSP
+        FROM
+            @frosty_friday_1
+    ) FILE_FORMAT = (FORMAT_NAME = 'csvformat');
+
+    
+-- Select all data from the 'frosty_friday_week1' table
+SELECT
+    *
+FROM
+    frosty_friday_week1;
+
+    
+-- Delete rows from the 'frosty_friday_week1' table where 'custom_text' is 'NULL'
+DELETE FROM
+    frosty_friday_week1
+WHERE
+    CUSTOM_TEXT = 'NULL';
