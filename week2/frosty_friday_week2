@@ -1,0 +1,159 @@
+-- Create an internal stage named 'frosty_friday_2' for storing data files
+CREATE STAGE frosty_friday_2;
+
+-- List the contents of the stage 'frosty_friday_2'
+LIST @frosty_friday_2;
+
+-- Create or replace a file format named 'parquetformat' for Parquet files
+CREATE OR REPLACE FILE FORMAT parquetformat TYPE = parquet;
+
+-- Select data from the files in the stage using the defined Parquet format
+SELECT
+    $1 AS data,
+    metadata$filename AS file_name,
+    CURRENT_TIMESTAMP() AS load_timestamp
+FROM
+    @frosty_friday_2 (file_format => 'parquetformat');
+
+-- Create a table to store the employee data
+CREATE TABLE FROSTY_FRIDAY_WEEK2 (
+    city STRING,
+    country STRING,
+    country_code STRING,
+    department STRING,
+    education STRING,
+    email STRING,
+    employee_id NUMBER,
+    first_name STRING,
+    job_title STRING,
+    last_name STRING,
+    payroll_iban STRING,
+    postcode STRING,
+    street_name STRING,
+    street_num NUMBER,
+    time_zone STRING,
+    title STRING,
+    file_name STRING,
+    load_timestamp TIMESTAMP
+);
+
+-- Insert data into the FROSTY_FRIDAY_WEEK2 table from the stage
+INSERT INTO FROSTY_FRIDAY_WEEK2 (
+    city,
+    country,
+    country_code,
+    department,
+    education,
+    email,
+    employee_id,
+    first_name,
+    job_title,
+    last_name,
+    payroll_iban,
+    postcode,
+    street_name,
+    street_num,
+    time_zone,
+    title,
+    file_name,
+    load_timestamp
+)
+SELECT
+    $1:city::STRING,
+    $1:country::STRING,
+    $1:country_code::STRING,
+    $1:dept::STRING,
+    $1:education::STRING,
+    $1:email::STRING,
+    $1:employee_id::NUMBER,
+    $1:first_name::STRING,
+    $1:job_title::STRING,
+    $1:last_name::STRING,
+    $1:payroll_iban::STRING,
+    $1:postcode::STRING,
+    $1:street_name::STRING,
+    $1:street_num::NUMBER,
+    $1:time_zone::STRING,
+    $1:title::STRING,
+    metadata$filename::STRING,
+    CURRENT_TIMESTAMP()
+FROM
+    @frosty_friday_2 (file_format => 'parquetformat');
+
+-- Query all data from the FROSTY_FRIDAY_WEEK2 table
+SELECT
+    *
+FROM
+    frosty_friday_week2;
+
+-- Create or replace a view to display specific columns from the FROSTY_FRIDAY_WEEK2 table
+CREATE OR REPLACE VIEW frosty_friday_week2_view AS
+SELECT
+    employee_id,
+    department,
+    job_title
+FROM
+    frosty_friday_week2;
+
+-- Query all data from the frosty_friday_week2_view view
+SELECT
+    *
+FROM
+    frosty_friday_week2_view;
+
+-- Create or replace a stream on the frosty_friday_week2_view to capture changes
+CREATE OR REPLACE STREAM frosty_friday_week2_stream ON VIEW frosty_friday_week2_view;
+
+-- Query all data from the frosty_friday_week2_stream to see captured changes
+SELECT
+    *
+FROM
+    frosty_friday_week2_stream;
+
+-- Update statements to modify specific records in the FROSTY_FRIDAY_WEEK2 table
+UPDATE
+    frosty_friday_week2
+SET
+    country = 'Japan'
+WHERE
+    employee_id = 8;
+
+UPDATE
+    frosty_friday_week2
+SET
+    last_name = 'Forester'
+WHERE
+    employee_id = 22;
+
+UPDATE
+    frosty_friday_week2
+SET
+    department = 'Marketing'
+WHERE
+    employee_id = 25;
+
+UPDATE
+    frosty_friday_week2
+SET
+    title = 'Ms'
+WHERE
+    employee_id = 32;
+
+UPDATE
+    frosty_friday_week2
+SET
+    job_title = 'Senior Financial Analyst'
+WHERE
+    employee_id = 68;
+
+-- Query all data from the frosty_friday_week2_view view after updates
+SELECT
+    *
+FROM
+    frosty_friday_week2_view;
+
+-- Query all data from the frosty_friday_week2_stream to see changes after updates
+SELECT
+    *
+FROM
+    frosty_friday_week2_stream;
