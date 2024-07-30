@@ -1,0 +1,29 @@
+-- Create a stage named FROSTY_FRIDAY_3 pointing to the S3 bucket
+CREATE STAGE FROSTY_FRIDAY_3
+URL = 's3://frostyfridaychallenges/challenge_3/';
+
+
+-- List the contents of the stage to see the files available
+LIST @FROSTY_FRIDAY_3;
+
+
+-- Create a new table FROSTY_FRIDAY_WEEK3 with specific data from the files in the stage
+CREATE TABLE FROSTY_FRIDAY_WEEK3 AS
+SELECT
+    METADATA$FILENAME AS FILENAME, -- The filename of each file
+    COUNT(METADATA$FILE_ROW_NUMBER) AS NUMBER_OF_ROWS -- The number of rows in each file
+FROM
+    @FROSTY_FRIDAY_3 -- The stage from which data is loaded
+WHERE
+    METADATA$FILENAME LIKE '%stacy_forgot_to_upload%' -- Filters files with specific patterns in their names
+    OR METADATA$FILENAME LIKE '%added%'
+    OR METADATA$FILENAME LIKE '%extra%'
+GROUP BY
+    FILENAME; -- Grouping results by filename
+
+    
+-- Select all data from the newly created table to view the results
+SELECT
+    *
+FROM
+    FROSTY_FRIDAY_WEEK3;
