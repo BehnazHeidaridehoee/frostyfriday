@@ -1,0 +1,55 @@
+-- Create or replace stage
+create or replace stage frosty_friday_4;
+
+-- Create or replace file format
+create or replace file format jsonformat type = 'json';
+
+-- List files in the stage
+list @frosty_friday_4;
+
+-- Select data from the stage to verify contents
+select
+    $1 as data,
+    metadata$filename as file_name,
+    current_timestamp() as load_timestamp
+from
+    @frosty_friday_4 (file_format => 'jsonformat')
+where
+    metadata$filename like '%Spanish_Monarchs%';
+
+-- Create or replace table from JSON data
+create or replace table frosty_friday_week4 as
+select 
+    row_number() over (order by monarchs.value:Era::STRING) as ID,
+    monarch.index+1 as INTER_HOUSE_ID,
+    monarchs.value:Era::STRING as Era,
+    house.value:House::STRING as House,
+    monarch.value:Name::STRING as Name,
+    monarch.value:Nickname[0]::STRING as Nickname_1,
+    monarch.value:Nickname[1]::STRING as Nickname_2,
+    monarch.value:Nickname[2]::STRING as Nickname_3,
+    -- Add more columns as needed
+    monarch.value:Birth::STRING as Birth_Date,
+    monarch.value:"Place of Birth"::STRING as Place_Of_Birth,
+    monarch.value:"Start of Reign"::STRING as Start_Of_Reign,
+    monarch.value:"End of Reign"::STRING as End_Of_Reign,
+    monarch.value:Duration::STRING as Duration,
+    monarch.value:Death::STRING as DeathDate,
+    monarch.value:"Consort\/Queen Consort"[0]::STRING as CONSORT_OR_QUEEN_CONSORT_1,   
+    monarch.value:"Consort\/Queen Consort"[1]::STRING as CONSORT_OR_QUEEN_CONSORT_2,    
+    monarch.value:"Consort\/Queen Consort"[2]::STRING as CONSORT_OR_QUEEN_CONSORT_3,      
+    monarch.value:"Age at Time of Death"::STRING as Age_At_Time_Of_Death,
+        monarch.value:"Place of Death"::STRING as Place_Of_Death,
+    monarch.value:"Burial Place"::STRING as Burial_Place
+from 
+    (select 
+        PARSE_JSON($1) AS data
+    from @frosty_friday_4 (file_format => 'jsonformat')
+    where
+        metadata$filename = 'Spanish_Monarchs.json') t,
+    lateral flatten(input => t.data) monarchs,
+    lateral flatten(input => monarchs.value:Houses) house,
+    lateral flatten(input => house.value:Monarchs) monarch;
+
+-- Select from the created table to verify results
+select * from frosty_friday_week4;
