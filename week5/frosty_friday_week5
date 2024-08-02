@@ -1,0 +1,21 @@
+-- Declare a function named `multiply_by_three` that takes an integer parameter `input_integer`.
+CREATE OR REPLACE FUNCTION multiply_by_three(input_integer INTEGER)
+-- Specify that the function returns an integer value.
+RETURNS INTEGER
+-- Indicate that the function's logic is written in Python.
+LANGUAGE PYTHON
+-- Use Python runtime version 3.8.
+RUNTIME_VERSION = '3.8'
+-- Define the handler, which is the name of the Python function that contains the logic.
+HANDLER = 'multiply_by_three_py'
+-- Start of the Python function body.
+AS
+-- Define the Python function `multiply_by_three_py` that multiplies `input_integer` by 3 and returns the result.
+$$
+def multiply_by_three_py(input_integer):
+    return input_integer * 3
+$$;
+
+-- Check Python UDF
+select multiply_by_three(6)
+;
